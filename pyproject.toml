@@ -9,6 +9,9 @@ readme = "README.md"
 python = "^3.11"
 opentele = "^1.15.1"
 pytest-asyncio = "^0.21.0"
+celery = {extras = ["redis"], version = "^5.2.7"}
+fastapi-admin = {git = "https://github.com/0xshodan/fastapi-admin.git"}
+pysocks = "^1.7.1"
 
 
 [tool.poetry.group.dev.dependencies]

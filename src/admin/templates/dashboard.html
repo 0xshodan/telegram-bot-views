@@ -1,0 +1,15 @@
+{% extends 'layout.html' %} {% block page_body %}
+<div class="d-flex flex-column">
+  <form action="/api/views">
+    <label for="name">Название канала</label>
+    <input id="name" name="name" type="text" />
+    <label for="count">Количество просмотров</label>
+    <input id="count" name="count" type="text" />
+    <label for="time"
+      >В течение какого времени накручивать просмотры (м/ч в конце)</label
+    >
+    <input id="time" name="time" type="text" />
+    <button type="submit">Запуск</button>
+  </form>
+</div>
+{% endblock %}

@@ -2,8 +2,10 @@ from telethon.tl.functions.messages import GetMessagesViewsRequest
 import random
 from .accounts_manager import AccountsManager, TelegramAccount
 import asyncio
+from celery.utils.log import get_logger
 
 
+logger = get_logger(__name__)
 class asyncrange:
 
     class __asyncrange:
@@ -30,7 +32,12 @@ class ViewsManager:
 
     async def get_last_post_id(self, channel_name: str):
         client = random.choice(self.accounts_manager.accounts).account
-        return [i async for i in client.iter_messages(channel_name)][0].id
+        logger.info(client)
+        messages = client.iter_messages(channel_name)
+        logger.info(messages)
+        message_id = [i async for i in messages][0].id
+        logger.info(message_id)
+        return message_id
 
     async def view_posts(self, channel_name: str, post_ids: list[int], worker: TelegramAccount):
         await worker.account(
@@ -43,7 +50,10 @@ class ViewsManager:
 
     async def view_channel(self, channel_name: str, views_count: int, seconds: int):
         delay = seconds / views_count
+        logger.info(delay)
         last_post_id = [await self.get_last_post_id(channel_name)]
+        logger.info(views_count)
         async for i in asyncrange(views_count):
             await self.view_posts(channel_name, last_post_id, self.accounts_manager.accounts[i])
+            logger.info(f"delay: {delay}")
             await asyncio.sleep(delay)

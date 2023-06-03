@@ -1,4 +1,4 @@
-from src.accounts_manager import AccountsManager
+from src.views_service.accounts_manager import AccountsManager
 import pytest_asyncio
 import asyncio
 
