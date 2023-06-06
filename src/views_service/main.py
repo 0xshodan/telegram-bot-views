@@ -27,7 +27,7 @@ celery_app = Celery("views", broker=os.environ.get("CELERY_BROKER_URL"), include
 celery_app.conf.beat_schedule = {
     'check-channels': {
         'task': 'src.views_service.tasks.check_new_posts',
-        'schedule': 20.0,
+        'schedule': 60.0,
     },
 }
 

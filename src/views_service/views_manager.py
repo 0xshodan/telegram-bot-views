@@ -62,9 +62,20 @@ class ViewsManager:
         task = await Task.get(id=task_id)
         subtasks = task.body.split("\r\n")
         accounts = await self.get_accounts()
+        offset = 0
         for subtask in subtasks:
-            count, view_time = map(lambda x: int(x),subtask.split())
-            delay = view_time / count
-            async for i in asyncrange(count):
+            count, view_time = subtask.split()
+            count = int(count)
+            if "ч" in view_time or "Ч" in view_time:
+                vvtime = 3600 * int(view_time.replace("ч", "").replace("Ч", ""))
+            elif "м" in view_time or "М" in view_time:
+                vvtime = 60 * int(view_time.replace("м", "").replace("М", ""))
+            elif "с" in view_time or "С" in view_time:
+                vvtime = int(view_time.replace("с", "").replace("С", ""))
+            else:
+                vvtime = int(view_time)
+            delay = vvtime / count
+            async for i in asyncrange(offset, count):
                 await self.view_posts(channel_name, accounts[i], posts)
                 await asyncio.sleep(delay)
+            offset += count
