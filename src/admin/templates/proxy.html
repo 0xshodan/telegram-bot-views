@@ -1,0 +1,16 @@
+{% extends 'layout.html' %} {% block page_body %}
+<form method="post">
+  <div class="input-group mb-3">
+    <textarea rows="15" class="form-control" name="text"></textarea>
+  </div>
+  <div class="form-footer">
+    <button type="submit" class="btn btn-primary">{{ _('Сохранить') }}</button>
+    <a
+      type="button"
+      class="btn btn-secondary"
+      href="{{ request.app.admin_path }}/proxy/list"
+      >{{ _('Вернуться') }}</a
+    >
+  </div>
+</form>
+{% endblock %}

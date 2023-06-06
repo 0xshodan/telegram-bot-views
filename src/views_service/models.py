@@ -2,6 +2,16 @@ from tortoise import Model, fields
 import socks
 import random
 
+
+class Task(Model):
+    body = fields.TextField()
+
+
+class Channel(Model):
+    name = fields.CharField(max_length=100)
+    last_post_id = fields.IntField(default=0)
+    task = fields.ForeignKeyField("models.Task", related_name="channels")
+
 class Proxy(Model):
     ip = fields.CharField(max_length=15)
     port = fields.CharField(max_length=5)
@@ -12,29 +22,26 @@ class Proxy(Model):
         return f"{self.ip}:{self.port}"
 
     def to_socks(self) -> tuple:
-        _ret = [socks.HTTP, self.ip, self.port]
+        _ret = [socks.HTTP, self.ip, int(self.port)]
         if self.username:
+            _ret.append(True)
             _ret.append(self.username)
         if self.password:
             _ret.append(self.password)
         return tuple(_ret)
 
-    def get_available(self):
-        proxies = Proxy.filter(client=None)
+    @classmethod
+    async def get_available(cls):
+        proxies = await Proxy.all()
         return random.choice(proxies)
 
 
-
-
-class Client(Model):
-    unique_id = fields.UUIDField(pk=True)
-    proxy = fields.OneToOneField("models.Proxy", related_name="client")
-    session = fields.TextField(unique=True)
-
 class Account(Model):
-    views = fields.IntField()
-    client = fields.ForeignKeyField("models.Client", related_name="accounts")
-    tdata_path = fields.TextField(unique=True)
+    unique_id = fields.UUIDField(pk=True)
+    proxy = fields.ForeignKeyField("models.Proxy", related_name="accounts", null=True)
+    session = fields.CharField(max_length=250, null=True)
+    views = fields.IntField(default=0)
+    tdata_path = fields.CharField(max_length=250, unique=True)
     unloaded = fields.BooleanField(default=True)
 
     def __str__(self):

@@ -1,28 +1,60 @@
 from redis.asyncio.client import Redis
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi_admin.app import app as admin_app
 from fastapi_admin.providers.login import UsernamePasswordProvider
 from src.admin.models import Admin
 import os
 from tortoise.contrib.fastapi import register_tortoise
-from starlette.responses import RedirectResponse, Response
-from src.views_service.tasks import view_channel
-
+from starlette.responses import RedirectResponse, Response, JSONResponse
+from src.views_service.accounts_manager import AccountsManager
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-app = FastAPI()
+class CustomFastAPI(FastAPI):
+    def setup_manager(self, manager):
+        self.manager = manager
+
+    @property
+    def accounts_manager(self):
+        return self.manager
+
+app = CustomFastAPI()
 
 @app.get("/")
 async def index():
     return RedirectResponse(url="/admin")
 
-@app.get("/api/views")
-async def api_views(name: str, count: int, time: int):
-    view_channel.delay(name, count, time)
+
+@app.post("/api/viewPosts")
+async def view_posts(request: Request):
+    req_json = await request.json()
+    print(req_json)
+    await app.manager.view_posts(req_json["name"], req_json["account_id"], req_json["posts"])
     return Response()
 
+@app.get("/api/getAccounts")
+async def get_accounts():
+    return JSONResponse({"accounts":app.manager.get_active_account_ids()})
 
+@app.get("/api/getLastPost")
+async def get_last_post(name:str):
+    return JSONResponse({"id": await app.manager.get_last_post_id(name)})
+
+app.mount("/admin", admin_app)
+
+register_tortoise(
+    app,
+    config={
+        "connections": {"default": "sqlite://db.sqlite3"},
+        "apps": {
+            "models": {
+                "models": ["src.admin.models", "src.views_service.models"],
+                "default_connection": "default",
+            }
+        },
+    },
+    generate_schemas=True,
+)
 @app.on_event("startup")
 async def startup():
     r = Redis(
@@ -41,20 +73,6 @@ async def startup():
         ],
         redis=r,
     )
-
-app.mount("/admin", admin_app)
-
-register_tortoise(
-    app,
-    config={
-        "connections": {"default": "sqlite://db.sqlite3"},
-        "apps": {
-            "models": {
-                "models": ["src.admin.models", "src.views_service.models"],
-                "default_connection": "default",
-            }
-        },
-    },
-    generate_schemas=True,
-)
-
+    manager = await AccountsManager.create()
+    await manager.init()
+    app.setup_manager(manager)

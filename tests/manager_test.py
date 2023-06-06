@@ -2,5 +2,5 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_init(manager):
+async def test_init(tortoise, manager):
     await manager.init()

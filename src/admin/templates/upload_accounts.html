@@ -1,0 +1,36 @@
+{% extends 'layout.html' %} {% block page_body %}
+<form method="post" enctype="multipart/form-data">
+  <div class="file-drop-area" style="position:relative;display:flex;align-items:center;width:450px;max-width:100%;padding:25px;border:1px dashed;border-radius:3px;transition:0.2s;">
+    <span class="choose-file-button" style="flex-shrink:0;background-color:rgba(255, 255, 255, 0.04);border:1px solid rgba(255, 255, 255, 0.1);color:#206bc4;border-radius:3px;padding: 8px15px;margin-right:10px;font-size:12px;text-transform:uppercase;">Выбрать архив</span>
+    <span class="file-message" style="font-size:small;font-weight:300;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">или перетащите его сюда</span>
+    <input class="file-input" style="position: absolute;left:0;top:0;height:100%;width:100%;cursor:pointer;opacity:0;" type="file" name="file" multiple>
+  </div>
+</div>
+
+</div>
+  </div>
+  <div class="form-footer">
+    <button type="submit" class="btn btn-primary">{{ _('Сохранить') }}</button>
+    <a
+      type="button"
+      class="btn btn-secondary"
+      href="{{ request.app.admin_path }}/proxy/list"
+      >{{ _('Вернуться') }}</a
+    >
+  </div>
+</form>
+<script>
+  $(document).on('change', '.file-input', function() {
+        var filesCount = $(this)[0].files.length;
+
+        var textbox = $(this).prev();
+
+        if (filesCount === 1) {
+          var fileName = $(this).val().split('\\').pop();
+          textbox.text(fileName);
+        } else {
+          textbox.text(filesCount + ' files selected');
+        }
+      });
+</script>
+{% endblock %}

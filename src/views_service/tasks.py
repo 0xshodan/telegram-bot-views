@@ -1,28 +1,33 @@
-from celery import Celery
+from src.views_service.main import celery_app
 from src.views_service.views_manager import ViewsManager
+from src.views_service.models import Channel
 import asyncio
-from src.views_service.accounts_manager import AccountsManager
+from celery.utils.log import get_logger
 
+logger= get_logger(__name__)
 
-async def init_manager() -> AccountsManager:
-    manager = await AccountsManager.create("accounts", "sessions")
-    await manager.init()
-    return manager
-
-class ManagerInitiator:
-    def __init__(self):
-        self.manager = None
-
-    def get_manager(self) -> AccountsManager:
-        if self.manager is None:
-            manager = asyncio.run(init_manager())
-            self.manager = manager
-        return self.manager
-
-manager_init = ManagerInitiator()
-celery_app = Celery("views", broker="redis://localhost:6379")
 
 @celery_app.task
-def view_channel(name: str, count: int, seconds: int):
-    views_manager = ViewsManager(manager_init.get_manager())
-    asyncio.run(views_manager.view_channel(name, count, seconds))
+def view_channel(name: str, posts:list[int], task_id: int):
+    views_manager = ViewsManager()
+    asyncio.run(views_manager.view_channel(name, task_id, posts))
+
+# @celery_app.task
+# def load_accounts():
+#     manager = manager_init.get_manager()
+#     asyncio.run(manager.add_accounts())
+
+async def aiiter(q):
+    return [i async for i in q]
+
+@celery_app.task
+def check_new_posts():
+    channels = asyncio.run(aiiter(Channel.all().select_related("task")))
+    views_manager = ViewsManager()
+    for channel in channels:
+        last_post = asyncio.run(views_manager.get_last_post_id(channel.name))
+        if last_post > channel.last_post_id:
+            posts = [i for i in range(channel.last_post_id+1, last_post+1)]
+            channel.last_post_id = last_post
+            asyncio.run(channel.save())
+            view_channel.delay(channel.name, posts, channel.task.id)

@@ -1,9 +1,11 @@
 import pytest
-from src.views_manager import ViewsManager
+from src.views_service.views_manager import ViewsManager
+from src.views_service.models import Channel
+
 
 @pytest.mark.asyncio
-async def test_views(manager):
+async def test_views(tortoise, manager):
     views_manager = ViewsManager(manager)
-    await views_manager.view_channel("@sspertest", 2, 20)
-    print("viewed")
-    await views_manager.view_channel("@mysupertestchannels", 2, 10)
+    channel = (await Channel.all())[0]
+    task = await channel.task.all()
+    await views_manager.view_channel(channel.name, task, [3,4])

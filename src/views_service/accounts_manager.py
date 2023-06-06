@@ -1,14 +1,21 @@
 from opentele.td import TDesktop
 from opentele.tl import TelegramClient
-from opentele.api import UseCurrentSession, APIData
-from src.views_service.models import Client, Proxy
+from opentele.api import UseCurrentSession, API
+from src.views_service.models import Proxy
 from src.views_service.models import Account as AccountModel
-
-
+from dataclasses import dataclass
+from telethon.tl.functions.messages import GetMessagesViewsRequest
+import random
+from telethon.errors.rpcerrorlist import SessionRevokedError, AuthKeyUnregisteredError
 def split_chucks(list_a: list, chunk_size: int) -> list:
 
   for i in range(0, len(list_a), chunk_size):
     yield list_a[i:i + chunk_size]
+
+@dataclass
+class AccountClient:
+    id: str
+    client: TelegramClient
 
 class SingletonMeta(type):
 
@@ -35,45 +42,88 @@ class AccountsManager(metaclass=SingletonMeta):
 
     async def load_clients(self) -> list[TelegramClient]:
         _clients: list[TelegramClient] = []
-        clients_db = await Client.all()
+        clients_db = await AccountModel.all()
 
         for client_db in clients_db:
-            api = APIData.Generate(client_db.unique_id)
-            tdesk = TDesktop(api=api)
-            for account in client_db.accounts:
-                tdesk.LoadTData(account.tdata_path)
+            if client_db.unloaded:
+                proxy = await Proxy.get_available()
+                client_db.proxy = proxy
+                client_db.unloaded = False
+                client_db.session = f"sessions/uid{client_db.unique_id}.session"
+                await client_db.save()
+            else:
+                proxy = await client_db.proxy.all()
+            api = API.TelegramIOS.Generate(client_db.unique_id)
+            tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
             client = await tdesk.ToTelethon(
                 session=client_db.session,
                 flag=UseCurrentSession,
-                proxy=client_db.proxy.to_socks()
+                proxy=proxy.to_socks()
                 )
-            _clients.append(client)
-        _clients += self._load_unloaded()
+            _clients.append(AccountClient(str(client_db.unique_id), client))
         return _clients
 
-
-    async def _load_unloaded(self) -> list[TelegramClient]:
+    async def add_accounts(self):
         _clients: list[TelegramClient] = []
-        unloaded_accs = await AccountModel.filter(unloaded=True)
-        for unloaded in split_chucks(unloaded_accs, 3):
-            client_db = Client.create()
-            print(client_db)
-            api = APIData.Generate(client_db.unique_id)
-            tdesk = TDesktop(api=api)
-            for account in unloaded:
-                tdesk.LoadTData(account.tdata_path)
+        clients_db = await AccountModel.filter(unloaded=True)
+        for client_db in clients_db:
+            proxy = await Proxy.get_available()
+            client_db.proxy = proxy
+            client_db.unloaded = False
+            client_db.session = f"sessions/uid{client_db.unique_id}.session"
+            await client_db.save()
+            api = API.TelegramIOS.Generate(client_db.unique_id)
+            tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
             client = await tdesk.ToTelethon(
                 session=client_db.session,
                 flag=UseCurrentSession,
-                proxy=Proxy.get_available().to_socks()
+                proxy=proxy.to_socks()
                 )
-            _clients.append(client)
-        return _clients
-
+            _clients.append(AccountClient(str(client_db.unique_id), client))
+        self.clients += _clients
 
     async def init(self):
         for i in range(len(self)):
-            await self.clients[i].connect()
+            await self.clients[i].client.connect()
+
+    async def view_posts(self, name: str, account_id: str, posts: list[int]):
+        client = self.get_client(account_id)
+        try:
+            await client(
+                GetMessagesViewsRequest(
+                    peer=name,
+                    id=posts,
+                    increment=True
+                )
+            )
+        except Exception as ex:
+            print(ex)
+            print("view_error", client)
+
+    async def get_last_post_id(self, channel_name: str) -> int:
+        for _ in range(5):
+            client = self.get_random_client()
+            try:
+                messages = client.iter_messages(channel_name)
+                return (await anext(messages)).id
+            except (SessionRevokedError, AuthKeyUnregisteredError):
+                print("get_error: ", client)
+                # TODO если сессия отклонена удалить аккаунт с бд и залогировать
+                continue
+
+    def get_random_client(self) -> TelegramClient:
+        return random.choice(self.clients).client
+
+    def get_client(self, account_id):
+        for client in self.clients:
+            if account_id == client.id:
+                return client.client
+
+    def get_active_account_ids(self) -> list[str]:
+        ret = []
+        for client in self.clients:
+            ret.append(client.id)
+        return ret
 
     def __len__(self) -> int:
-        return len(self.accounts)
+        return len(self.clients)
