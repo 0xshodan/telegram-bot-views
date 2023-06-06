@@ -59,9 +59,12 @@ async def import_proxy(
             port = data[2]
             proxies.append(Proxy(ip=ip, port=port, username=username, password=password))
         else:
-            ip = data[0]
-            port = data[1]
-            proxies.append(Proxy(ip=ip, port=port))
+            try:
+                ip = data[0]
+                port = data[1]
+                proxies.append(Proxy(ip=ip, port=port))
+            except Exception as ex:
+                print(ex)
     await Proxy.bulk_create(proxies, ignore_conflicts=True)
     return RedirectResponse("/admin/proxy/list",status_code=status.HTTP_303_SEE_OTHER)
 
