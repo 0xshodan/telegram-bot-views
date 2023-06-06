@@ -7,6 +7,10 @@ import os
 from tortoise.contrib.fastapi import register_tortoise
 from starlette.responses import RedirectResponse, Response, JSONResponse
 from src.views_service.accounts_manager import AccountsManager
+from dotenv import load_dotenv
+
+
+load_dotenv(".env")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -42,10 +46,13 @@ async def get_last_post(name:str):
 
 app.mount("/admin", admin_app)
 
+db_user = os.environ["DB_USER"]
+db_password = os.environ["DB_PASSWORD"]
+db_name = os.environ["DB_NAME"]
 register_tortoise(
     app,
     config={
-        "connections": {"default": "sqlite://db.sqlite3"},
+        "connections": {"default": f"asyncpg://{db_user}:{db_password}@db:5432/{db_name}"},
         "apps": {
             "models": {
                 "models": ["src.admin.models", "src.views_service.models"],
@@ -58,6 +65,7 @@ register_tortoise(
 @app.on_event("startup")
 async def startup():
     r = Redis(
+        host="redis",
         decode_responses=True,
         encoding="utf8",
     )

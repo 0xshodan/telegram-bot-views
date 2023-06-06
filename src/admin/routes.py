@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, UploadFile, File
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from fastapi_admin.app import app
@@ -7,7 +7,11 @@ from fastapi_admin.template import templates
 from typing import Annotated
 from src.views_service.models import Proxy
 from fastapi import Form, status
-
+import shutil
+import os
+from src.views_service.models import Account
+import pyunpack
+from src.admin.start import app as root_app
 
 @app.get("/")
 async def home(
@@ -76,24 +80,24 @@ async def import_account(
         },
     )
 
-# @app.post("/account/import")
-# async def import_acc(
-#     file: UploadFile = File(...),
-# ):
-#     filepath = f"static/{file.filename}"
-#     ex_filename = filepath.replace(".rar","").replace(".zip","")
-#     with open(filepath, "wb") as buffer:
-#         shutil.copyfileobj(file.file, buffer)
-#     try:
-#         os.mkdir(ex_filename)
-#     except FileExistsError:
-#         shutil.rmtree(ex_filename, ignore_errors=True)
-#         os.mkdir(ex_filename)
-#     pyunpack.Archive(filepath).extractall(ex_filename)
-#     subdirs = next(os.walk(ex_filename))[1]
-#     accounts = []
-#     for dir in subdirs:
-#         accounts.append(Account(tdata_path=os.path.abspath(f"{ex_filename}/{dir}/tdata")))
-#     await Account.bulk_create(accounts, ignore_conflicts=True)
-#     load_accounts.delay()
-#     return RedirectResponse("/admin/account/list",status_code=status.HTTP_303_SEE_OTHER)
+@app.post("/account/import")
+async def import_acc(
+    file: UploadFile = File(...),
+):
+    filepath = f"static/{file.filename}"
+    ex_filename = filepath.replace(".rar","").replace(".zip","")
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    try:
+        os.mkdir(ex_filename)
+    except FileExistsError:
+        shutil.rmtree(ex_filename, ignore_errors=True)
+        os.mkdir(ex_filename)
+    pyunpack.Archive(filepath).extractall(ex_filename)
+    subdirs = next(os.walk(ex_filename))[1]
+    accounts = []
+    for dir in subdirs:
+        accounts.append(Account(tdata_path=os.path.abspath(f"{ex_filename}/{dir}/tdata")))
+    await Account.bulk_create(accounts, ignore_conflicts=True)
+    await root_app.manager.add_accounts()
+    return RedirectResponse("/admin/account/list",status_code=status.HTTP_303_SEE_OTHER)

@@ -3,7 +3,6 @@ from src.views_service.models import Task
 import aiohttp
 import asyncio
 
-
 logger = get_logger(__name__)
 class asyncrange:
 
@@ -26,7 +25,7 @@ class asyncrange:
 
 class ViewsManager:
     def __init__(self) -> None:
-        base_url = "http://127.0.0.1:8000"
+        base_url = "http://app:8000"
         self.get_accounts_url = f"{base_url}/api/getAccounts"
         self.get_last_post_id_url = f"{base_url}/api/getLastPost"
         self.view_posts_url = f"{base_url}/api/viewPosts"
