@@ -81,11 +81,20 @@ class AccountsManager(metaclass=SingletonMeta):
                 )
             _clients.append(AccountClient(str(client_db.unique_id), client))
         self.clients += _clients
+        await self.init()
 
     async def init(self):
+        _cl = []
         for i in range(len(self)):
-            await self.clients[i].client.connect()
-
+            try:
+                cl = self.clients[i]
+                await cl.client.connect()
+                _cl.append(cl)
+                await self.clients[i].client.connect()
+            except:
+                c = await AccountModel.get(unique_id=self.clients[i].id)
+                await c.delete()
+        self.clients = _cl
     async def view_posts(self, name: str, account_id: str, posts: list[int]):
         client = self.get_client(account_id)
         try:
@@ -106,10 +115,12 @@ class AccountsManager(metaclass=SingletonMeta):
             try:
                 messages = client.iter_messages(channel_name)
                 return (await anext(messages)).id
-            except (SessionRevokedError, AuthKeyUnregisteredError):
+            except (SessionRevokedError, AuthKeyUnregisteredError) as ex:
                 print("get_error: ", client)
+                print(ex)
                 # TODO если сессия отклонена удалить аккаунт с бд и залогировать
                 continue
+        return 0
 
     def get_random_client(self) -> TelegramClient:
         return random.choice(self.clients).client

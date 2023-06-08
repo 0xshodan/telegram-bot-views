@@ -64,6 +64,7 @@ class ViewsManager:
         accounts = await self.get_accounts()
         offset = 0
         for subtask in subtasks:
+            print(offset)
             count, view_time = subtask.split()
             count = int(count)
             if "ч" in view_time or "Ч" in view_time:
@@ -76,6 +77,8 @@ class ViewsManager:
                 vvtime = int(view_time)
             delay = vvtime / count
             async for i in asyncrange(offset, count):
+                print("view")
+                print(channel_name, accounts[i], posts)
                 await self.view_posts(channel_name, accounts[i], posts)
                 await asyncio.sleep(delay)
             offset += count
