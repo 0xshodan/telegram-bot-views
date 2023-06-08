@@ -76,9 +76,10 @@ class ViewsManager:
             else:
                 vvtime = int(view_time)
             delay = vvtime / count
-            async for i in asyncrange(offset, count):
+            print(offset, count)
+            async for i in asyncrange(count):
                 print("view")
-                print(channel_name, accounts[i], posts)
+                print(channel_name, accounts[offset+i], posts)
                 await self.view_posts(channel_name, accounts[i], posts)
                 await asyncio.sleep(delay)
             offset += count
