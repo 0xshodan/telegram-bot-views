@@ -54,7 +54,13 @@ class AccountsManager(metaclass=SingletonMeta):
             else:
                 proxy = await client_db.proxy.all()
             api = API.TelegramIOS.Generate(client_db.unique_id)
-            tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
+            try:
+                tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
+            except Exception as ex:
+                print(ex)
+                print(client_db.tdata_path)
+                print(client_db.unique_id)
+                continue
             client = await tdesk.ToTelethon(
                 session=client_db.session,
                 flag=UseCurrentSession,
