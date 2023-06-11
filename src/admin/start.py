@@ -8,7 +8,7 @@ from tortoise.contrib.fastapi import register_tortoise
 from starlette.responses import RedirectResponse, Response, JSONResponse
 from src.views_service.accounts_manager import AccountsManager
 from dotenv import load_dotenv
-
+from src.views_service.models import Channel
 
 load_dotenv(".env")
 
@@ -39,6 +39,12 @@ async def view_posts(request: Request):
 @app.get("/api/getAccounts")
 async def get_accounts():
     return JSONResponse({"accounts":app.manager.get_active_account_ids()})
+
+@app.get("/api/getChannels")
+async def get_channels():
+    channels = await Channel.all().select_related("task")
+    print(channels)
+    return JSONResponse({})
 
 @app.get("/api/getLastPost")
 async def get_last_post(name:str):

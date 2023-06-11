@@ -27,6 +27,7 @@ class ViewsManager:
     def __init__(self) -> None:
         base_url = "http://app:8000"
         self.get_accounts_url = f"{base_url}/api/getAccounts"
+        self.get_channels_url = f"{base_url}/api/getChannels"
         self.get_last_post_id_url = f"{base_url}/api/getLastPost"
         self.view_posts_url = f"{base_url}/api/viewPosts"
 
@@ -46,7 +47,9 @@ class ViewsManager:
     async def get_accounts(self) -> list[str]:
         json = await self._get(self.get_accounts_url)
         return json["accounts"]
-
+    async def get_channels(self) -> list[str]:
+        json = await self._get(self.get_channels_url)
+        return json["accounts"]
     async def view_posts(self, channel_name: str, account_id: str, posts:list[int]):
         await self._post(self.view_posts_url, json={
             "name": channel_name,

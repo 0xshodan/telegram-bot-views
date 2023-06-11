@@ -4,7 +4,14 @@ import random
 
 
 class Task(Model):
+    name = fields.CharField(max_length=255, null=True)
     body = fields.TextField()
+
+    def __str__(self):
+        if self.name is not None:
+            return self.name
+        else:
+            return self.body
 
 
 class Channel(Model):

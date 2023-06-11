@@ -1,6 +1,5 @@
 from src.views_service.main import celery_app
 from src.views_service.views_manager import ViewsManager
-from src.views_service.models import Channel
 import asyncio
 from celery.utils.log import get_logger
 
@@ -22,12 +21,13 @@ async def aiiter(q):
 
 @celery_app.task
 def check_new_posts():
-    try:
-        channels = asyncio.run(aiiter(Channel.all().select_related("task")))
-    except Exception as ex:
-        logger.exception(ex)
-        return
+    # try:
+    #     channels = asyncio.run(aiiter(Channel.all().select_related("task")))
+    # except Exception as ex:
+    #     logger.exception(ex)
+    #     return
     views_manager = ViewsManager()
+    channels = asyncio.run(views_manager.get_channels())
     for channel in channels:
         last_post = asyncio.run(views_manager.get_last_post_id(channel.name))
         if last_post > channel.last_post_id:
