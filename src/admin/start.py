@@ -43,8 +43,20 @@ async def get_accounts():
 @app.get("/api/getChannels")
 async def get_channels():
     channels = await Channel.all().select_related("task")
-    print(channels)
-    return JSONResponse({})
+    ret = []
+    for channel in channels:
+        ret.append(
+            {
+                "name":channel.name,
+                "last_post_id":channel.last_post_id,
+                "task":
+                    {
+                    "name":channel.task.name,
+                    "body": channel.task.body
+                    }
+             }
+             )
+    return JSONResponse({"channels":ret})
 
 @app.get("/api/getLastPost")
 async def get_last_post(name:str):

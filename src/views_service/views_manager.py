@@ -1,5 +1,4 @@
 from celery.utils.log import get_logger
-from src.views_service.models import Task
 import aiohttp
 import asyncio
 
@@ -61,9 +60,8 @@ class ViewsManager:
         json = await self._get(self.get_last_post_id_url, {"name": channel_name})
         return json["id"]
 
-    async def view_channel(self, channel_name: str, task_id: int, posts: list[int]):
-        task = await Task.get(id=task_id)
-        subtasks = task.body.split("\r\n")
+    async def view_channel(self, channel_name: str, task: dict, posts: list[int]):
+        subtasks = task["body"].split("\r\n")
         accounts = await self.get_accounts()
         offset = 0
         for subtask in subtasks:
