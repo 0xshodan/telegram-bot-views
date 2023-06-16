@@ -48,7 +48,7 @@ class ViewsManager:
         return json["accounts"]
     async def get_channels(self) -> list[str]:
         json = await self._get(self.get_channels_url)
-        return json["accounts"]
+        return json["channels"]
     async def view_posts(self, channel_name: str, account_id: str, posts:list[int]):
         await self._post(self.view_posts_url, json={
             "name": channel_name,
