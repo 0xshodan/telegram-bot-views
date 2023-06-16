@@ -57,6 +57,7 @@ class AccountsManager(metaclass=SingletonMeta):
                 proxy = await client_db.proxy.all()
             api = API.TelegramIOS.Generate(client_db.unique_id)
             try:
+                print(client_db.tdata_path)
                 tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
                 client = await tdesk.ToTelethon(
                 session=client_db.session,
@@ -81,6 +82,7 @@ class AccountsManager(metaclass=SingletonMeta):
             client_db.session = f"sessions/uid{client_db.unique_id}.session"
             await client_db.save()
             api = API.TelegramIOS.Generate(client_db.unique_id)
+            print(client_db.tdata_path)
             tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
             client = await tdesk.ToTelethon(
                 session=client_db.session,
