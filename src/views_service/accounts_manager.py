@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from telethon.tl.functions.messages import GetMessagesViewsRequest
 import random
 from telethon.errors.rpcerrorlist import SessionRevokedError, AuthKeyUnregisteredError
+
+
 def split_chucks(list_a: list, chunk_size: int) -> list:
 
   for i in range(0, len(list_a), chunk_size):
@@ -56,17 +58,17 @@ class AccountsManager(metaclass=SingletonMeta):
             api = API.TelegramIOS.Generate(client_db.unique_id)
             try:
                 tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
+                client = await tdesk.ToTelethon(
+                session=client_db.session,
+                flag=UseCurrentSession,
+                proxy=proxy.to_socks()
+                )
+                _clients.append(AccountClient(str(client_db.unique_id), client))
             except Exception as ex:
                 print(ex)
                 print(client_db.tdata_path)
                 print(client_db.unique_id)
                 continue
-            client = await tdesk.ToTelethon(
-                session=client_db.session,
-                flag=UseCurrentSession,
-                proxy=proxy.to_socks()
-                )
-            _clients.append(AccountClient(str(client_db.unique_id), client))
         return _clients
 
     async def add_accounts(self):
