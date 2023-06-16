@@ -62,6 +62,13 @@ async def get_channels():
 async def get_last_post(name:str):
     return JSONResponse({"id": await app.manager.get_last_post_id(name)})
 
+@app.get("/api/changeLastPost")
+async def change_last_post(post_id: int, name: str):
+    channel = await Channel.get(name=name)
+    channel.last_post_id = post_id
+    await channel.save()
+    return JSONResponse({"error":False})
+
 app.mount("/admin", admin_app)
 
 db_user = os.environ["DB_USER"]

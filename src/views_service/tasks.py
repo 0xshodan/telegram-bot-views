@@ -27,5 +27,5 @@ def check_new_posts():
         last_post = asyncio.run(views_manager.get_last_post_id(channel["name"]))
         if last_post > channel["last_post_id"]:
             posts = [i for i in range(channel["last_post_id"]+1, last_post+1)]
-            channel["last_post_id"] = last_post
+            asyncio.run(views_manager.change_last_post_id(channel["name"], last_post))
             view_channel.delay(channel["name"], posts, channel["task"])

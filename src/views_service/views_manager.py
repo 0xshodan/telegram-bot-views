@@ -28,6 +28,7 @@ class ViewsManager:
         self.get_accounts_url = f"{base_url}/api/getAccounts"
         self.get_channels_url = f"{base_url}/api/getChannels"
         self.get_last_post_id_url = f"{base_url}/api/getLastPost"
+        self.change_last_post_id_url = f"{base_url}/api/changeLastPost"
         self.view_posts_url = f"{base_url}/api/viewPosts"
 
     async def _get(self, url: str, params: dict = {}, data=None) -> dict:
@@ -59,6 +60,9 @@ class ViewsManager:
     async def get_last_post_id(self, channel_name: str) -> int:
         json = await self._get(self.get_last_post_id_url, {"name": channel_name})
         return json["id"]
+
+    async def change_last_post_id(self, channel_name: str, post_id: int) -> None:
+        await self._get(self.change_last_post_id_url, {"name": channel_name, "post_id": post_id})
 
     async def view_channel(self, channel_name: str, task: dict, posts: list[int]):
         subtasks = task["body"].split("\r\n")
