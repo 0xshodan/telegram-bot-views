@@ -106,6 +106,7 @@ async def import_acc(
     subdirs = next(os.walk(ex_filename))[1]
     accounts = []
     for dir in subdirs:
+        print(os.listdir(os.path.abspath(f"{ex_filename}/{dir}/tdata")))
         accounts.append(
             Account(tdata_path=os.path.abspath(f"{ex_filename}/{dir}/tdata"))
         )

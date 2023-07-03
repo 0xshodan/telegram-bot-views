@@ -1,10 +1,12 @@
 from celery.utils.log import get_logger
 import aiohttp
 import asyncio
+import random
 
 logger = get_logger(__name__)
-class asyncrange:
 
+
+class asyncrange:
     class __asyncrange:
         def __init__(self, *args):
             self.__iter_range = iter(range(*args))
@@ -36,33 +38,39 @@ class ViewsManager:
             async with session.get(url, params=params, data=data) as response:
                 ret = await response.json()
         return ret
-    async def _post(self, url: str, json: dict = {}) -> dict:
+
+    async def _post(self, url: str, json: dict = {}) -> dict | int:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=json) as response:
                 try:
-                    ret = await response.json()
+                    return await response.json()
                 except:
-                    return None
-        return ret
+                    return response.status
+
     async def get_accounts(self) -> list[str]:
         json = await self._get(self.get_accounts_url)
         return json["accounts"]
+
     async def get_channels(self) -> list[str]:
         json = await self._get(self.get_channels_url)
         return json["channels"]
-    async def view_posts(self, channel_name: str, account_id: str, posts:list[int]):
-        await self._post(self.view_posts_url, json={
-            "name": channel_name,
-            "account_id": account_id,
-            "posts": posts
-            })
+
+    async def view_posts(
+        self, channel_name: str, account_id: str, posts: list[int]
+    ) -> aiohttp.ClientResponse:
+        return await self._post(
+            self.view_posts_url,
+            json={"name": channel_name, "account_id": account_id, "posts": posts},
+        )
 
     async def get_last_post_id(self, channel_name: str) -> int:
         json = await self._get(self.get_last_post_id_url, {"name": channel_name})
         return json["id"]
 
     async def change_last_post_id(self, channel_name: str, post_id: int) -> None:
-        await self._get(self.change_last_post_id_url, {"name": channel_name, "post_id": post_id})
+        await self._get(
+            self.change_last_post_id_url, {"name": channel_name, "post_id": post_id}
+        )
 
     async def view_channel(self, channel_name: str, task: dict, posts: list[int]):
         subtasks = task["body"].split("\r\n")
@@ -70,7 +78,7 @@ class ViewsManager:
         offset = 0
         for subtask in subtasks:
             count, view_time = subtask.split()
-            count = int(count)
+            count = int(count) + (int(count) / 100 * random.randint(-10, 10))
             if "ч" in view_time or "Ч" in view_time:
                 vvtime = 3600 * int(view_time.replace("ч", "").replace("Ч", ""))
             elif "м" in view_time or "М" in view_time:
@@ -81,7 +89,18 @@ class ViewsManager:
                 vvtime = int(view_time)
             delay = vvtime / count
             async for i in asyncrange(count):
-                print(offset+i)
-                await self.view_posts(channel_name, accounts[offset+i], posts)
+                print(offset + i)
+                status = await self.view_posts(
+                    channel_name, accounts[offset + i], posts
+                )
+                while status != 200:
+                    offset += 1
+                    try:
+                        status = await self.view_posts(
+                            channel_name, accounts[offset + i], posts
+                        )
+                    except Exception as ex:
+                        logger.error(ex)
+                        return
                 await asyncio.sleep(delay)
             offset += count

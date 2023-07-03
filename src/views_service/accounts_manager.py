@@ -6,21 +6,26 @@ from src.views_service.models import Account as AccountModel
 from dataclasses import dataclass
 from telethon.tl.functions.messages import GetMessagesViewsRequest
 import random
-from telethon.errors.rpcerrorlist import SessionRevokedError, AuthKeyUnregisteredError
+from telethon.errors.rpcerrorlist import (
+    SessionRevokedError,
+    AuthKeyUnregisteredError,
+    UserDeactivatedError,
+    UserDeactivatedBanError,
+)
 
 
 def split_chucks(list_a: list, chunk_size: int) -> list:
+    for i in range(0, len(list_a), chunk_size):
+        yield list_a[i : i + chunk_size]
 
-  for i in range(0, len(list_a), chunk_size):
-    yield list_a[i:i + chunk_size]
 
 @dataclass
 class AccountClient:
     id: str
     client: TelegramClient
 
-class SingletonMeta(type):
 
+class SingletonMeta(type):
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
@@ -31,7 +36,6 @@ class SingletonMeta(type):
 
 
 class AccountsManager(metaclass=SingletonMeta):
-
     @classmethod
     async def create(cls):
         self = AccountsManager()
@@ -60,9 +64,9 @@ class AccountsManager(metaclass=SingletonMeta):
                 print(client_db.tdata_path)
                 tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
                 client = await tdesk.ToTelethon(
-                session=client_db.session,
-                flag=UseCurrentSession,
-                proxy=proxy.to_socks()
+                    session=client_db.session,
+                    flag=UseCurrentSession,
+                    proxy=proxy.to_socks(),
                 )
                 _clients.append(AccountClient(str(client_db.unique_id), client))
             except Exception as ex:
@@ -87,8 +91,8 @@ class AccountsManager(metaclass=SingletonMeta):
             client = await tdesk.ToTelethon(
                 session=client_db.session,
                 flag=UseCurrentSession,
-                proxy=proxy.to_socks()
-                )
+                proxy=proxy.to_socks(),
+            )
             _clients.append(AccountClient(str(client_db.unique_id), client))
         self.clients += _clients
         await self.init()
@@ -105,28 +109,25 @@ class AccountsManager(metaclass=SingletonMeta):
                 c = await AccountModel.get(unique_id=self.clients[i].id)
                 await c.delete()
         self.clients = _cl
+
     async def view_posts(self, name: str, account_id: str, posts: list[int]):
         client = self.get_client(account_id)
-        try:
-            await client(
-                GetMessagesViewsRequest(
-                    peer=name,
-                    id=posts,
-                    increment=True
-                )
-            )
-        except Exception as ex:
-            print(ex)
-            print("view_error", client)
+        await client(GetMessagesViewsRequest(peer=name, id=posts, increment=True))
 
     async def get_last_post_id(self, channel_name: str) -> int:
-        for _ in range(5):
+        for _ in range(20):
             client = self.get_random_client()
             try:
                 messages = client.client.iter_messages(channel_name)
                 return (await anext(messages)).id
-            except (SessionRevokedError, AuthKeyUnregisteredError):
+            except (
+                SessionRevokedError,
+                AuthKeyUnregisteredError,
+                UserDeactivatedError,
+                UserDeactivatedBanError,
+            ):
                 print("get_error: ", client)
+                self.delete_client(client.id)
                 db_account = await AccountModel.get(unique_id=client.id)
                 print(f"deleted: {client.id}, {db_account.tdata_path}")
                 await db_account.delete()
@@ -140,6 +141,12 @@ class AccountsManager(metaclass=SingletonMeta):
         for client in self.clients:
             if account_id == client.id:
                 return client.client
+
+    def delete_client(self, unique_id: str) -> None:
+        for i, client in enumerate(self.clients):
+            if client.id == unique_id:
+                del self.clients[i]
+                return
 
     def get_active_account_ids(self) -> list[str]:
         ret = []
