@@ -78,7 +78,7 @@ class ViewsManager:
         offset = 0
         for subtask in subtasks:
             count, view_time = subtask.split()
-            count = int(count) + (int(count) / 100 * random.randint(-10, 10))
+            count = int(count) + int(int(count) / 100 * random.randint(-10, 10))
             if "ч" in view_time or "Ч" in view_time:
                 vvtime = 3600 * int(view_time.replace("ч", "").replace("Ч", ""))
             elif "м" in view_time or "М" in view_time:
