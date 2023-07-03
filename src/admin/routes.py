@@ -13,6 +13,7 @@ from src.views_service.models import Account
 import pyunpack
 from src.admin.start import app as root_app
 
+
 @app.get("/")
 async def home(
     request: Request,
@@ -27,6 +28,7 @@ async def home(
             "page_title": "Просмотреть канал",
         },
     )
+
 
 @app.get("/proxy/import")
 async def import_proxy_page(
@@ -43,6 +45,7 @@ async def import_proxy_page(
         },
     )
 
+
 @app.post("/proxy/import")
 async def import_proxy(
     request: Request,
@@ -57,7 +60,9 @@ async def import_proxy(
             username = data[0]
             password, ip = data[1].split("@")
             port = data[2]
-            proxies.append(Proxy(ip=ip, port=port, username=username, password=password))
+            proxies.append(
+                Proxy(ip=ip, port=port, username=username, password=password)
+            )
         else:
             try:
                 ip = data[0]
@@ -66,7 +71,7 @@ async def import_proxy(
             except Exception as ex:
                 print(ex)
     await Proxy.bulk_create(proxies, ignore_conflicts=True)
-    return RedirectResponse("/admin/proxy/list",status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse("/admin/proxy/list", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.get("/account/import")
@@ -83,12 +88,13 @@ async def import_account(
         },
     )
 
+
 @app.post("/account/import")
 async def import_acc(
     file: UploadFile = File(...),
 ):
     filepath = f"static/{file.filename}"
-    ex_filename = filepath.replace(".rar","").replace(".zip","")
+    ex_filename = filepath.replace(".rar", "").replace(".zip", "")
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     try:
@@ -100,7 +106,12 @@ async def import_acc(
     subdirs = next(os.walk(ex_filename))[1]
     accounts = []
     for dir in subdirs:
-        accounts.append(Account(tdata_path=os.path.abspath(f"{ex_filename}/{dir}/tdata")))
+        accounts.append(
+            Account(tdata_path=os.path.abspath(f"{ex_filename}/{dir}/tdata"))
+        )
+    print(accounts)
     await Account.bulk_create(accounts, ignore_conflicts=True)
     await root_app.manager.add_accounts()
-    return RedirectResponse("/admin/account/list",status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(
+        "/admin/account/list", status_code=status.HTTP_303_SEE_OTHER
+    )

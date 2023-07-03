@@ -4,6 +4,7 @@ import random
 
 
 class Task(Model):
+    owner = fields.ForeignKeyField("models.Admin", related_name="tasks")
     name = fields.CharField(max_length=255, null=True)
     body = fields.TextField()
 
@@ -18,6 +19,8 @@ class Channel(Model):
     name = fields.CharField(max_length=100)
     last_post_id = fields.IntField(default=0)
     task = fields.ForeignKeyField("models.Task", related_name="channels")
+    owner = fields.ForeignKeyField("models.Admin", related_name="channels")
+
 
 class Proxy(Model):
     ip = fields.CharField(max_length=15)
