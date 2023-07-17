@@ -40,7 +40,7 @@ services:
 
   celery:
     build: .
-    command: celery -A src.views_service.tasks:celery_app worker -l info
+    command: celery -A src.views_service.tasks:celery_app worker -l info --without-gossip --without-mingle --without-heartbeat -Ofair
     volumes:
       - .:/app
     depends_on:
