@@ -24,7 +24,7 @@ async def aiiter(q):
 
 
 @shared_task(bind=True)
-def check_new_posts():
+def check_new_posts(self):
     print("task_here")
     views_manager = ViewsManager()
     channels = asyncio.run(views_manager.get_channels())
