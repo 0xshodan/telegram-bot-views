@@ -61,7 +61,6 @@ class AccountsManager(metaclass=SingletonMeta):
                 proxy = await client_db.proxy.all()
             api = API.TelegramIOS.Generate(client_db.unique_id)
             try:
-                print(client_db.tdata_path)
                 tdesk = TDesktop(api=api, basePath=client_db.tdata_path)
                 client = await tdesk.ToTelethon(
                     session=client_db.session,
@@ -103,9 +102,11 @@ class AccountsManager(metaclass=SingletonMeta):
             try:
                 cl = self.clients[i]
                 await cl.client.connect()
+                print(f"{i}/{len(self)} {cl.id} connected")
                 _cl.append(cl)
                 await self.clients[i].client.connect()
-            except:
+            except Exception as ex:
+                print(f"{i}/{len(self)} {cl.id} error: {ex}")
                 c = await AccountModel.get(unique_id=self.clients[i].id)
                 await c.delete()
         self.clients = _cl
