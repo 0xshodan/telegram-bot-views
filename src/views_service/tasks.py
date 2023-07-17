@@ -2,11 +2,12 @@ from src.views_service.main import celery_app
 from src.views_service.views_manager import ViewsManager
 import asyncio
 from celery.utils.log import get_logger
+from celery import shared_task
 
 logger = get_logger(__name__)
 
 
-@celery_app.task
+@celery_app.task(bind=True)
 def view_channel(name: str, posts: list[int], task: dict):
     views_manager = ViewsManager()
     asyncio.run(views_manager.view_channel(name, task, posts))
@@ -22,8 +23,9 @@ async def aiiter(q):
     return [i async for i in q]
 
 
-@celery_app.task
+@shared_task(bind=True)
 def check_new_posts():
+    print("task_here")
     views_manager = ViewsManager()
     channels = asyncio.run(views_manager.get_channels())
     print(channels)
