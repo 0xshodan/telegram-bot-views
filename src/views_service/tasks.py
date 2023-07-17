@@ -24,14 +24,12 @@ async def aiiter(q):
 
 @celery_app.task
 def check_new_posts():
-    print("task")
-    # views_manager = ViewsManager()
-    # print("task")
-    # channels = asyncio.run(views_manager.get_channels())
-    # print(channels)
-    # for channel in channels:
-    #     last_post = asyncio.run(views_manager.get_last_post_id(channel["name"]))
-    #     if last_post > channel["last_post_id"]:
-    #         posts = [i for i in range(channel["last_post_id"] + 1, last_post + 1)]
-    #         asyncio.run(views_manager.change_last_post_id(channel["name"], last_post))
-    #         view_channel.delay(channel["name"], posts, channel["task"])
+    views_manager = ViewsManager()
+    channels = asyncio.run(views_manager.get_channels())
+    print(channels)
+    for channel in channels:
+        last_post = asyncio.run(views_manager.get_last_post_id(channel["name"]))
+        if last_post > channel["last_post_id"]:
+            posts = [i for i in range(channel["last_post_id"] + 1, last_post + 1)]
+            asyncio.run(views_manager.change_last_post_id(channel["name"], last_post))
+            view_channel.delay(channel["name"], posts, channel["task"])
