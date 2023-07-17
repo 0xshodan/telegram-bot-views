@@ -55,3 +55,14 @@ services:
     depends_on:
       - app
       - redis
+
+  flower:
+    build: .
+    command: celery -A src.views_service.tasks:celery_app flower
+    volumes:
+      - .:/app
+    ports:
+      - 5555:5555
+    depends_on:
+      - celery
+      - redis
