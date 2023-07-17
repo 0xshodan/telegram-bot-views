@@ -8,7 +8,7 @@ logger = get_logger(__name__)
 
 
 @celery_app.task(bind=True)
-def view_channel(name: str, posts: list[int], task: dict):
+def view_channel(self, name: str, posts: list[int], task: dict):
     views_manager = ViewsManager()
     asyncio.run(views_manager.view_channel(name, task, posts))
 
